@@ -25,18 +25,8 @@ import java.net.URI;
 import java.net.URL;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-//import java.util.function.Function;
+import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -361,17 +351,6 @@ public class Json implements java.io.Serializable
         Json make(Object anything);
     }
 
-    static interface Function<T, R> {
-
-        /**
-         * Applies this function to the given argument.
-         *
-         * @param t the function argument
-         * @return the function result
-         */
-        R apply(T t);
-    }
-    
     /**
      * <p>
      * Represents JSON schema - a specific data format that a JSON entity must
@@ -411,6 +390,11 @@ public class Json implements java.io.Serializable
     	 * @return <code>{"ok":true}</code> or <code>{"ok":false, errors:["msg1", "msg2", ...]}</code>
     	 */
     	Json validate(Json document);
+
+		/**
+		 * @return the <code>Json</code> representing this <code>Schema</code>, with all JSON pointers dereferenced.
+		 */
+		Json getJson();
     	
     	/**
     	 * <p>Possible options are: <code>ignoreDefaults:true|false</code>.
@@ -1040,7 +1024,7 @@ public class Json implements java.io.Serializable
     	Json theschema;
     	Instruction start;
     	
-    	DefaultSchema(URI uri, Json theschema, Function<URI, Json> relativeReferenceResolver) 
+    	DefaultSchema(URI uri, Json theschema, Function<URI, Json> relativeReferenceResolver)
     	{ 
     		try
     		{
@@ -1067,6 +1051,11 @@ public class Json implements java.io.Serializable
     		Json errors = start.apply(document);    		    		
     		return errors == null ? result : result.set("errors", errors).set("ok", false);
     	}
+
+		@Override
+		public Json getJson() {
+			return theschema;
+		}
     	
     	public Json generate(Json options)
     	{
@@ -1095,7 +1084,11 @@ public class Json implements java.io.Serializable
     {
     	return new DefaultSchema(uri, S, null);
     }
-        
+
+	public static Schema schema(Json S, Function<URI, Json> relativeReferenceResolver) {
+		return new DefaultSchema(null, S, relativeReferenceResolver);
+	}
+
     public static class DefaultFactory implements Factory
     {
         public Json nil() { return Json.topnull; }
